@@ -15,7 +15,7 @@ export function getWebSocketUrl(path = '/ws/chat/'): string {
 export type WSMessage =
   | { type: 'connected'; user?: { user_id: number; username: string; display_name: string } }
   | { type: 'waiting'; message?: string }
-  | { type: 'matched'; session_id: string; partner: { user_id: string; username: string; display_name?: string }; is_initiator?: boolean }
+  | { type: 'matched'; session_id: string; partner: { user_id: string; username: string; display_name?: string; age?: string; country?: string }; is_initiator?: boolean }
   | { type: 'chat'; message: string; sender_id: string }
   | { type: 'signal'; payload: RTCSignal }
   | { type: 'partner_next' }
