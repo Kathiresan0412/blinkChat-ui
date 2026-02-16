@@ -3,7 +3,16 @@
 ## Overview
 
 - **Frontend:** Deploy to **Vercel** (Next.js).
-- **Backend:** Deploy to a **VPS or cloud** (e.g. Ubuntu on DigitalOcean, AWS EC2, Railway, Render) with Django, Redis, and optionally MongoDB.
+- **Backend:** Deploy to a **host that supports WebSockets** (Railway, Render, Fly.io, or a VPS). **Do not use Vercel for the backend** if you want video/audio/chat: Vercel serverless does not support WebSockets, so users will never get matched.
+
+## Why two devices don’t match when the API is on Vercel
+
+Matchmaking, chat, and video/audio all use a **WebSocket** connection (`/ws/chat/`). Vercel runs serverless functions (short request/response only) and **cannot hold WebSocket connections**. So:
+
+- If your API is at `https://blink-chat-api.vercel.app`, the UI will try to connect to `wss://blink-chat-api.vercel.app/ws/chat/`, but that connection will not work as a real WebSocket.
+- Result: both devices stay on “Looking for someone…” and never get matched.
+
+**Fix:** Run the backend on **Railway**, **Render**, **Fly.io**, or a **VPS** (with Daphne + Redis). Then in the **UI** (Vercel) set `NEXT_PUBLIC_API_URL` (and optionally `NEXT_PUBLIC_WS_URL`) to that backend URL. Both devices will then use the same WebSocket server and can match, with video, audio, and chat.
 
 ## Frontend (Vercel)
 
@@ -13,7 +22,21 @@
    - `NEXT_PUBLIC_WS_URL` – Backend WebSocket URL (e.g. `wss://api.yourdomain.com/ws/chat/`). If omitted, the app derives it from `NEXT_PUBLIC_API_URL` (http→ws, https→wss).
 3. Deploy. Vercel will build and serve the Next.js app.
 
-## Backend (VPS / cloud)
+## Backend (must support WebSockets)
+
+### Quick path: Railway
+
+1. Go to [Railway](https://railway.app) and create a project.
+2. Add **Redis** (one-click) and note its `REDIS_URL`.
+3. Deploy the **api** folder (e.g. connect GitHub, set root to `api`, add build command `pip install -r requirements.txt`, start command `daphne -b 0.0.0.0 -p $PORT config.asgi:application`).
+4. Set env vars: `ALLOWED_HOSTS` = `*.railway.app` or your custom domain, `CORS_ORIGINS` = `https://blink-chat-ui.vercel.app`, `REDIS_URL`, `DJANGO_SECRET_KEY`, `DEBUG=False`.
+5. Copy the public URL (e.g. `https://your-app.railway.app`).
+6. In **Vercel** (your UI project): set `NEXT_PUBLIC_API_URL` = `https://your-app.railway.app/api`. Redeploy the UI.
+7. Open https://blink-chat-ui.vercel.app/chat on two devices; they should match and get video, audio, and chat.
+
+### Other hosts (Render, Fly.io, VPS)
+
+Same idea: run Daphne (ASGI) + Redis, then point the UI’s `NEXT_PUBLIC_API_URL` (and `NEXT_PUBLIC_WS_URL` if needed) to that backend.
 
 ### Requirements
 
