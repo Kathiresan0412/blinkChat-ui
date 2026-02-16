@@ -243,6 +243,10 @@ function ChatContent({
   const [reportDesc, setReportDesc] = useState('');
   const [reportSending, setReportSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  /** Ref so we can pass stream to handleSignal even before localStream state updates (fixes offer-before-stream race). */
+  const localStreamRef = useRef<MediaStream | null>(null);
+  /** Queue signals that arrive before we have a stream (e.g. offer before startLocalStream resolves). */
+  const pendingSignalsRef = useRef<RTCSignal[]>([]);
 
   const sendSignal = useRef<(p: RTCSignal) => void>(() => {});
   const { lastMessage, setLastMessage, status, send } = useWebSocket(token);
@@ -258,8 +262,11 @@ function ChatContent({
     send({ type: 'signal', payload });
   });
   sendSignal.current = (payload) => send({ type: 'signal', payload });
+  localStreamRef.current = localStream ?? null;
 
   const disconnectAndRequeue = useCallback(() => {
+    pendingSignalsRef.current = [];
+    localStreamRef.current = null;
     stopWebRTC();
     setPartner(null);
     setSessionId(null);
@@ -284,7 +291,12 @@ function ChatContent({
       setMessages([]);
       const isInitiator = msg.is_initiator !== false;
       startLocalStream().then((stream) => {
-        if (stream) createPeerConnection(stream, isInitiator);
+        if (stream) {
+          localStreamRef.current = stream;
+          createPeerConnection(stream, isInitiator);
+          const pending = pendingSignalsRef.current.splice(0);
+          pending.forEach((payload) => handleSignal(payload, stream));
+        }
       });
     } else if (msg.type === 'chat') {
       setMessages((prev) => [
@@ -292,7 +304,12 @@ function ChatContent({
         { id: `${Date.now()}-${prev.length}`, text: msg.message, self: false },
       ]);
     } else if (msg.type === 'signal') {
-      handleSignal(msg.payload, localStream ?? null);
+      const stream = localStreamRef.current ?? localStream ?? null;
+      if (stream) {
+        handleSignal(msg.payload, stream);
+      } else {
+        pendingSignalsRef.current.push(msg.payload);
+      }
     } else if (msg.type === 'partner_next' || msg.type === 'partner_left') {
       disconnectAndRequeue();
     }

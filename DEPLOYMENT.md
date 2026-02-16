@@ -100,6 +100,16 @@ Or run Gunicorn for HTTP and Daphne for WebSockets behind a reverse proxy (e.g. 
 - Run migrations and collect static files if you serve them from Django: `python manage.py migrate && python manage.py collectstatic --noinput`.
 - Consider rate limiting (e.g. django-ratelimit) on auth and report endpoints.
 
+## Video / matchmaking not working?
+
+1. **Backend must support WebSockets** (Railway, Render, Fly.io, etc.). Not Vercel serverless.
+2. **Railway (backend) – set `CORS_ORIGINS`** to your **exact frontend origin**:
+   - If the UI is on Vercel: `CORS_ORIGINS=https://your-project.vercel.app` (no trailing slash).
+   - If testing from your machine: add `http://localhost:3000`.
+   - You can use multiple origins separated by commas.
+3. **Vercel (frontend) – set** `NEXT_PUBLIC_API_URL` to your Railway API URL, e.g. `https://blinkchap-api-production.up.railway.app/api`. The WebSocket URL is derived from this (e.g. `wss://blinkchap-api-production.up.railway.app/ws/chat/`).
+4. Redeploy both after changing env vars. Use two different browsers or devices to test matching and video.
+
 ## Summary
 
 | Component | Where | Notes |
