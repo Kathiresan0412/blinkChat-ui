@@ -1,15 +1,14 @@
 /**
- * WebSocket URL for chat: derived from API URL (http(s) -> ws(s), add path).
+ * WebSocket URL for chat. Uses NEXT_PUBLIC_WS_URL if set; otherwise derives from
+ * API URL using origin only (so /api prefix is not used for WS). Backend serves
+ * WebSocket at /ws/chat/ on the same host as the API.
  */
 export function getWebSocketUrl(path = '/ws/chat/'): string {
-  if (typeof window === 'undefined') {
-    const base = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const url = base.replace(/^http/, 'ws');
-    return `${url.replace(/\/$/, '')}${path}`;
-  }
   const base = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  const url = base.replace(/^http/, 'ws');
-  return `${url.replace(/\/$/, '')}${path}`;
+  const parsed = new URL(base.startsWith('ws') ? base.replace(/^ws/, 'http') : base);
+  const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsOrigin = `${wsProtocol}//${parsed.host}`;
+  return `${wsOrigin.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 export type WSMessage =
