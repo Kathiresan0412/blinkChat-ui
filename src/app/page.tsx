@@ -8,28 +8,14 @@ export default function Home() {
         <p className="text-lg text-zinc-400">
           Video chat with random people. One click to start.
         </p>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Link
-            href="/chat"
-            className="rounded-full bg-amber-500 px-8 py-3 font-semibold text-zinc-950 transition hover:bg-amber-400"
-          >
-            Start Chat
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full border border-zinc-600 px-8 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:bg-zinc-800"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-full border border-zinc-600 px-8 py-3 font-medium text-zinc-300 transition hover:border-zinc-500 hover:bg-zinc-800"
-          >
-            Register
-          </Link>
-        </div>
+        <Link
+          href="/chat"
+          className="rounded-full bg-amber-500 px-10 py-3.5 font-semibold text-zinc-950 transition hover:bg-amber-400"
+        >
+          Start Chat
+        </Link>
         <p className="text-sm text-zinc-500">
-          By starting, you agree to be respectful. Report abuse when you see it.
+          By starting, you agree to be respectful.
         </p>
       </main>
     </div>
